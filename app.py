@@ -172,6 +172,8 @@ if data_option == "Load from Web (yfinance)":
 
     if st.sidebar.button("Fetch Data"):
         df_raw = yf.download(ticker, start=start_date, end=end_date)
+        if isinstance(df_raw.columns, pd.MultiIndex):
+            df_raw.columns = [c[0] for c in df_raw.columns]
         df_raw.reset_index(inplace=True)
         st.success(f"Loaded {len(df_raw)} rows for {ticker}")
     else:
@@ -248,3 +250,4 @@ model_for_forecast = rf_model if forecast_model_name == "Random Forest" else lin
 st.subheader(f"Next {forecast_days} Days Forecast ({forecast_model_name})")
 forecast_df = forecast_next_days(df_features, scaler, model_for_forecast, forecast_days)
 st.dataframe(forecast_df)
+
