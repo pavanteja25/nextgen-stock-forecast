@@ -80,7 +80,11 @@ def train_models(X_train_s, y_train):
 def evaluate_model(model, X_test_s, y_test, name: str):
     preds = model.predict(X_test_s)
     mae = mean_absolute_error(y_test, preds)
-    rmse = mean_squared_error(y_test, preds, squared=False)
+
+    # Older versions of scikit-learn don't support squared=False
+    mse = mean_squared_error(y_test, preds)
+    rmse = np.sqrt(mse)
+
     r2 = r2_score(y_test, preds)
     return {
         "Model": name,
@@ -89,6 +93,7 @@ def evaluate_model(model, X_test_s, y_test, name: str):
         "R2": r2,
         "Preds": preds,
     }
+
 
 def plot_predictions(dates_test, y_test, preds_lin, preds_rf):
     fig, ax = plt.subplots(figsize=(10, 4))
@@ -250,4 +255,5 @@ model_for_forecast = rf_model if forecast_model_name == "Random Forest" else lin
 st.subheader(f"Next {forecast_days} Days Forecast ({forecast_model_name})")
 forecast_df = forecast_next_days(df_features, scaler, model_for_forecast, forecast_days)
 st.dataframe(forecast_df)
+
 
