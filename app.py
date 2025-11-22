@@ -114,6 +114,27 @@ def plot_predictions(dates_test, y_test, preds_lin, preds_rf):
     )
     return fig
 
+def plot_long_forecast(df_features, forecast_df):
+    hist = df_features[["Date", "Close"]].copy()
+    hist.rename(columns={"Close": "Price"}, inplace=True)
+    hist["Type"] = "Historical"
+
+    fut = forecast_df.rename(columns={"Predicted_Close": "Price"})
+    fut["Type"] = "Forecast"
+
+    df_all = pd.concat([hist, fut], ignore_index=True)
+
+    fig = px.line(
+        df_all,
+        x="Date",
+        y="Price",
+        color="Type",
+        title="Historical vs Forecasted Prices",
+        labels={"Price": "Price", "Type": "Series"},
+    )
+    return fig
+
+
 
 def forecast_next_days(df_features: pd.DataFrame, scaler, model, days_ahead: int = 7):
     df = df_features.copy()
@@ -204,10 +225,15 @@ else:
 # --- Sidebar: Model settings ---
 st.sidebar.header("Model Settings")
 test_size = st.sidebar.slider("Test size (fraction)", 0.1, 0.4, 0.2, 0.05)
-forecast_days = st.sidebar.slider("Days to forecast", 1, 14, 7)
+
+# Forecast up to 5 years (approx. 365 days per year)
+forecast_years = st.sidebar.slider("Years to forecast", 1, 5, 1)
+forecast_days = forecast_years * 365
+
 forecast_model_name = st.sidebar.selectbox(
     "Model for forecasting", ["Random Forest", "Linear Regression"]
 )
+
 
 # --- Main processing pipeline ---
 try:
@@ -260,9 +286,15 @@ st.plotly_chart(fig, use_container_width=True)
 
 model_for_forecast = rf_model if forecast_model_name == "Random Forest" else lin_model
 
-st.subheader(f"Next {forecast_days} Days Forecast ({forecast_model_name})")
-forecast_df = forecast_next_days(df_features, scaler, model_for_forecast, forecast_days)
+st.subheader(f"Next {forecast_years} Years Forecast ({forecast_model_name})")
+forecast_df = forecast_next_days(df_features, scaler, model_for_forecast, days_ahead=forecast_days)
 st.dataframe(forecast_df)
+
+forecast_fig = plot_long_forecast(df_features, forecast_df)
+st.plotly_chart(forecast_fig, use_container_width=True)
+
+
+
 
 
 
