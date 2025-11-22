@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.express as px
 import streamlit as st
 import yfinance as yf
 
@@ -96,16 +97,23 @@ def evaluate_model(model, X_test_s, y_test, name: str):
 
 
 def plot_predictions(dates_test, y_test, preds_lin, preds_rf):
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(dates_test, y_test, label="Actual Close")
-    ax.plot(dates_test, preds_lin, label="Linear Regression")
-    ax.plot(dates_test, preds_rf, label="Random Forest")
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Price")
-    ax.set_title("Actual vs Predicted Closing Prices")
-    ax.legend()
-    fig.tight_layout()
+    """Return an interactive Plotly figure for actual vs predicted."""
+    df_plot = pd.DataFrame({
+        "Date": dates_test,
+        "Actual Close": y_test,
+        "Linear Regression": preds_lin,
+        "Random Forest": preds_rf,
+    })
+
+    fig = px.line(
+        df_plot,
+        x="Date",
+        y=["Actual Close", "Linear Regression", "Random Forest"],
+        labels={"value": "Price", "variable": "Series"},
+        title="Actual vs Predicted Closing Prices",
+    )
     return fig
+
 
 def forecast_next_days(df_features: pd.DataFrame, scaler, model, days_ahead: int = 7):
     df = df_features.copy()
@@ -248,12 +256,13 @@ st.dataframe(metrics_df)
 
 fig = plot_predictions(dates_test, y_test, res_lin["Preds"], res_rf["Preds"])
 st.subheader("Actual vs Predicted Prices")
-st.pyplot(fig)
+st.plotly_chart(fig, use_container_width=True)
 
 model_for_forecast = rf_model if forecast_model_name == "Random Forest" else lin_model
 
 st.subheader(f"Next {forecast_days} Days Forecast ({forecast_model_name})")
 forecast_df = forecast_next_days(df_features, scaler, model_for_forecast, forecast_days)
 st.dataframe(forecast_df)
+
 
 
